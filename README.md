@@ -41,6 +41,50 @@ Both should return `{"status":"ok"}`. The app page at http://localhost:3000 show
 
 Equivalent without the script: `docker compose up --build` (add `-d` to detach). Extra Compose flags can be passed through, e.g. `./build-up.sh -d --force-recreate`.
 
+## Run locally without Docker (no database needed)
+
+**Prerequisites:** Java 21 and Maven 3.9+ (`java -version`, `mvn -version`).
+
+**Run the tests** (from the `server` folder):
+
+```bash
+cd server
+mvn test
+```
+
+**Start the server** with the `local` profile, which skips PostgreSQL and keeps data in memory:
+
+```bash
+cd server
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+The API is then at http://localhost:8080. Data resets every time the server restarts. Stop it with `Ctrl+C`.
+
+**Try the repayment API** (in a second terminal). The server starts with three sample loans: `L-100` ($1,000, delinquent borrower), `L-200` ($1,200, not delinquent), and `L-300` ($15,000, delinquent).
+
+```bash
+# List loans
+curl http://localhost:8080/api/repayment/loans
+
+# Create a 10-month repayment plan
+curl -X POST http://localhost:8080/api/repayment/loans/L-100/plan \
+  -H "Content-Type: application/json" -d '{"termMonths": 10}'
+
+# Generate an incentive offer (expires 14 days after the date given)
+curl -X POST http://localhost:8080/api/repayment/loans/L-100/plan/offer \
+  -H "Content-Type: application/json" -d '{"date": "2026-11-01"}'
+
+# Borrower accepts the offer
+curl -X POST http://localhost:8080/api/repayment/loans/L-100/plan/offer/accept \
+  -H "Content-Type: application/json" -d '{"date": "2026-11-15"}'
+
+# Approve the plan (checks regulatory limits)
+curl -X POST http://localhost:8080/api/repayment/loans/L-100/plan/approve
+```
+
+Invalid requests are rejected with an error message: a bad input such as `{"termMonths": 0}` returns **400**, a rule violation such as a second plan or an expired offer returns **409**, and an unknown loan returns **404**.
+
 ## Project layout
 
 ```text
