@@ -85,6 +85,41 @@ curl -X POST http://localhost:8080/api/repayment/loans/L-100/plan/approve
 
 Invalid requests are rejected with an error message: a bad input such as `{"termMonths": 0}` returns **400**, a rule violation such as a second plan or an expired offer returns **409**, and an unknown loan returns **404**.
 
+**Try the delinquency-detection API.** The server starts with five sample loans (`D-100` to `D-500`), each with a $10,000 principal and one installment. A loan is **delinquent** when any installment is six or more calendar months past due, or when unpaid missed payments are more than 25% of the principal. Add `?date=YYYY-MM-DD` to evaluate "as of" a date (default: today).
+
+```bash
+# Status of every loan
+curl "http://localhost:8080/api/delinquency/loans?date=2026-11-22"
+
+# $2,600 unpaid on a $10,000 loan (over 25%) -> DELINQUENT
+curl "http://localhost:8080/api/delinquency/loans/D-200?date=2026-11-22"
+
+# Six-month boundary: due 2026-04-15, so NON_DELINQUENT on 10-14 and DELINQUENT on 10-15
+curl "http://localhost:8080/api/delinquency/loans/D-300?date=2026-10-14"
+curl "http://localhost:8080/api/delinquency/loans/D-300?date=2026-10-15"
+```
+
+An unknown loan returns **404**; a date not in `YYYY-MM-DD` format returns **400**.
+
+**Try the officer-assignment API.** Two officers are seeded: `O-1` (Dana Lee) and `O-2` (Marcus Reed). Borrowers come from the repayment sample loans (`B-100`, `B-200`, `B-300`). Only delinquent borrowers can be assigned, each borrower has at most one officer, and an officer's caseload is capped at 25.
+
+```bash
+# List officers and their caseloads
+curl http://localhost:8080/api/officers
+
+# Assign delinquent borrower B-100 to officer O-1
+curl -X POST http://localhost:8080/api/officers/O-1/borrowers \
+  -H "Content-Type: application/json" -d '{"borrowerId": "B-100"}'
+
+# O-1 can view B-100's case
+curl http://localhost:8080/api/officers/O-1/borrowers/B-100
+
+# O-2 is not assigned to B-100 -> 403
+curl http://localhost:8080/api/officers/O-2/borrowers/B-100
+```
+
+Assigning a non-delinquent or already-assigned borrower, or exceeding the caseload cap, returns **409**; an unknown officer or borrower returns **404**.
+
 ## Project layout
 
 ```text
