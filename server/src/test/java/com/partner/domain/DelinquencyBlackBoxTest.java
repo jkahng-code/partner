@@ -139,4 +139,17 @@ class DelinquencyBlackBoxTest {
 
         assertEquals(DelinquencyStatus.DELINQUENT, policy.evaluate(loan, sixthMonthAnniversary));
     }
+
+    @Test
+    // T13 covers B5: evaluation date one day after six-month anniversary (P3)
+    // Added during the CP2 write-up: the six-month boundary was tested below (B3) and at (B4), not just above.
+    void t13_dayAfterSixMonthsIsDelinquent() {
+        LoanPayment late = new LoanPayment(
+                "p1", new BigDecimal("50.00"), BigDecimal.ZERO, LocalDate.of(2026, 1, 15), null);
+        Loan loan = new Loan("L-1", new BigDecimal("10000.00"), List.of(late));
+        LocalDate sixthMonthAnniversary = LocalDate.of(2026, 1, 15).plusMonths(6);
+
+        assertEquals(DelinquencyStatus.DELINQUENT, policy.evaluate(loan, sixthMonthAnniversary.plusDays(1)));
+        assertTrue(loan.determineDelinquency(sixthMonthAnniversary.plusDays(1), policy));
+    }
 }
