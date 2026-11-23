@@ -96,6 +96,18 @@ class DelinquencyBlackBoxTest {
     }
 
     @Test
+    // T12 covers B1 just below 25% unpaid boundary ($2,499.99 of $10,000 is under 25%)
+    // Added during the CP2 write-up: B1 was only tested at and above, not just below.
+    void t12_justUnderTwentyFivePercentUnpaidStillCurrent() {
+        LoanPayment late = new LoanPayment(
+                "p1", new BigDecimal("2499.99"), BigDecimal.ZERO, LocalDate.of(2026, 1, 1), null);
+        Loan loan = new Loan("L-1", new BigDecimal("10000.00"), List.of(late));
+
+        assertEquals(DelinquencyStatus.NON_DELINQUENT, policy.evaluate(loan, LocalDate.of(2026, 2, 1)));
+        assertFalse(loan.determineDelinquency(LocalDate.of(2026, 2, 1), policy));
+    }
+
+    @Test
     // T9 covers B2 above 25% unpaid boundary
     void t9_moreThanTwentyFivePercentUnpaidIsDelinquent() {
         LoanPayment late = new LoanPayment(
