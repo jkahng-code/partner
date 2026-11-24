@@ -43,20 +43,20 @@ Equivalent without the script: `docker compose up --build` (add `-d` to detach).
 
 ## Run locally without Docker (no database needed)
 
-**Prerequisites:** Java 21 and Maven 3.9+ (`java -version`, `mvn -version`).
+**Prerequisites:** Java 21 (`java -version`). Maven does not need to be installed: the `server` folder includes the Maven wrapper (`./mvnw`, or `mvnw.cmd` on Windows), which downloads the correct Maven version the first time it runs. If you already have Maven 3.9+, `mvn` works in place of `./mvnw`.
 
 **Run the tests** (from the `server` folder):
 
 ```bash
 cd server
-mvn test
+./mvnw test
 ```
 
 **Start the server** with the `local` profile, which skips PostgreSQL and keeps data in memory:
 
 ```bash
 cd server
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 The API is then at http://localhost:8080. Data resets every time the server restarts. Stop it with `Ctrl+C`.
